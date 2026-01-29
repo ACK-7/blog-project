@@ -5,6 +5,7 @@ import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import Spinner from '../components/common/Spinner';
+import ImageUpload from '../components/common/ImageUpload';
 import { sweetAlert } from '../utils/sweetAlert';
 
 const EditPost = () => {
@@ -20,6 +21,9 @@ const EditPost = () => {
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [currentPost, setCurrentPost] = useState(null);
+    const [featuredImage, setFeaturedImage] = useState(null);
+    const [removeCurrentImage, setRemoveCurrentImage] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -33,6 +37,7 @@ const EditPost = () => {
             ]);
 
             const post = postResponse.data.data;
+            setCurrentPost(post);
             setFormData({
                 title: post.title,
                 content: post.content,
@@ -60,20 +65,77 @@ const EditPost = () => {
         });
     };
 
+    const handleImageSelect = (file) => {
+        setFeaturedImage(file);
+        setRemoveCurrentImage(false);
+    };
+
+    const handleImageRemove = () => {
+        setFeaturedImage(null);
+        setRemoveCurrentImage(true);
+    };
+
+    const handleRemoveCurrentImage = async () => {
+        const result = await sweetAlert.confirm(
+            'Remove Featured Image?',
+            'Are you sure you want to remove the current featured image?',
+            'Yes, remove it',
+            'Cancel'
+        );
+
+        if (result.isConfirmed) {
+            try {
+                await api.delete(`/posts/${slug}/image`);
+                setCurrentPost({ ...currentPost, featured_image_url: null });
+                sweetAlert.toast.success('Featured image removed successfully');
+            } catch (error) {
+                sweetAlert.toast.error('Failed to remove image');
+            }
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrors({});
         setSubmitting(true);
 
         try {
-            await api.put(`/posts/${slug}`, formData);
+            // Create FormData for file upload
+            const submitData = new FormData();
+            
+            // Append form fields
+            Object.keys(formData).forEach(key => {
+                if (formData[key]) {
+                    submitData.append(key, formData[key]);
+                }
+            });
+            
+            // Handle image changes
+            if (featuredImage) {
+                // New image selected
+                submitData.append('featured_image', featuredImage);
+            } else if (removeCurrentImage) {
+                // Remove current image
+                submitData.append('remove_featured_image', '1');
+            }
+            
+            const response = await api.post(`/posts/${slug}`, submitData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'X-HTTP-Method-Override': 'PUT'
+                },
+            });
+            
+            // Get the updated post data (which may have a new slug if title was changed)
+            const updatedPost = response.data.data;
+            const newSlug = updatedPost?.slug || slug; // Fallback to original slug if response is unexpected
             
             // Show success alert
             sweetAlert.success(
                 'Post Updated Successfully!',
                 'Your changes have been saved.'
             ).then(() => {
-                navigate(`/posts/${slug}`);
+                navigate(`/posts/${newSlug}`);
             });
         } catch (error) {
             if (error.response?.data?.errors) {
@@ -129,6 +191,39 @@ const EditPost = () => {
                         error={errors.title?.[0]}
                         required
                     />
+
+                    <div className="mb-6">
+                        <ImageUpload
+                            onImageSelect={handleImageSelect}
+                            onImageRemove={handleImageRemove}
+                            currentImage={!removeCurrentImage ? currentPost?.featured_image_url : null}
+                            disabled={submitting}
+                        />
+                        {currentPost?.featured_image_url && !featuredImage && !removeCurrentImage && (
+                            <div className="mt-2">
+                                <Button
+                                    type="button"
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={handleRemoveCurrentImage}
+                                    disabled={submitting}
+                                >
+                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Remove Current Image
+                                </Button>
+                            </div>
+                        )}
+                        {errors.featured_image && (
+                            <p className="mt-2 text-sm text-red-600 flex items-center">
+                                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                {errors.featured_image[0]}
+                            </p>
+                        )}
+                    </div>
 
                     <div className="mb-6">
                         <label className="block text-sm font-semibold text-slate-700 mb-2">

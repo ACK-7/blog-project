@@ -12,20 +12,53 @@ const DashboardPostCard = ({ post, onDelete }) => {
     };
 
     return (
-        <Card className="h-full flex flex-col">
-            <div className="p-6 flex-1 flex flex-col">
-                {/* Category and Date */}
-                <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 px-3 py-1 rounded-full font-medium">
-                        {post.category.name}
-                    </span>
-                    <span className="text-sm text-slate-500 flex items-center">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        {formatDate(post.created_at)}
-                    </span>
+        <Card className="h-full flex flex-col overflow-hidden">
+            {/* Featured Image */}
+            {post.featured_image_url && (
+                <div className="relative h-32 overflow-hidden">
+                    <Link to={`/posts/${post.slug}`}>
+                        <img
+                            src={post.featured_image_url}
+                            alt={post.title}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                        />
+                    </Link>
+                    <div className="absolute top-2 left-2">
+                        <span className="inline-block bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded-full">
+                            {post.category.name}
+                        </span>
+                    </div>
                 </div>
+            )}
+            
+            <div className="p-6 flex-1 flex flex-col">
+                {/* Category and Date - only show if no featured image */}
+                {!post.featured_image_url && (
+                    <div className="flex items-center justify-between mb-4">
+                        <span className="text-sm bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 px-3 py-1 rounded-full font-medium">
+                            {post.category.name}
+                        </span>
+                        <span className="text-sm text-slate-500 flex items-center">
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            {formatDate(post.created_at)}
+                        </span>
+                    </div>
+                )}
+                
+                {/* Date for posts with featured images */}
+                {post.featured_image_url && (
+                    <div className="mb-3">
+                        <span className="text-sm text-slate-500 flex items-center">
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            {formatDate(post.created_at)}
+                        </span>
+                    </div>
+                )}
                 
                 {/* Title */}
                 <Link to={`/posts/${post.slug}`} className="flex-1">

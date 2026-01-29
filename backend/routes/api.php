@@ -30,6 +30,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/posts/trashed', [PostController::class, 'trashed']); // Get trashed posts
     Route::post('/posts/{slug}/restore', [PostController::class, 'restore']); // Restore post
     Route::delete('/posts/{slug}/force', [PostController::class, 'forceDestroy']); // Hard delete
+    Route::delete('/posts/{post:slug}/image', [PostController::class, 'removeImage']); // Remove featured image
     
     // Posts - General CRUD (these come after specific routes)
     Route::post('/posts', [PostController::class, 'store']);

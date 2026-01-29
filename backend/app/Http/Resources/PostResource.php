@@ -22,6 +22,8 @@ class PostResource extends JsonResource
             'title' => $this->title,
             'slug' => $this->slug,
             'content' => $this->content,
+            'featured_image' => $this->featured_image,
+            'featured_image_url' => $this->featured_image ? url(\Storage::url($this->featured_image)) : null,
             'published_at' => $this->published_at ? $this->published_at->format(self::DATE_FORMAT) : null,
             
             // Include related data

@@ -49,8 +49,22 @@ class PostController extends Controller
      */
     public function store(StorePostRequest $request)
     {
-        // user_id is automatically added in prepareForValidation
-        $post = Post::create($request->all());
+        $data = $request->validated();
+        
+        // Ensure user_id is set (important for FormData requests)
+        $data['user_id'] = auth()->id();
+        
+        // Generate slug if not provided
+        if (empty($data['slug'])) {
+            $data['slug'] = $this->generateSlug($data['title']);
+        }
+        
+        // Handle featured image upload
+        if ($request->hasFile('featured_image')) {
+            $data['featured_image'] = $this->handleImageUpload($request->file('featured_image'));
+        }
+
+        $post = Post::create($data);
 
         // Load relationships for the response
         $post->load(['user', 'category']);
@@ -83,7 +97,25 @@ class PostController extends Controller
             ], 403);
         }
 
-        $post->update($request->all());
+        $data = $request->validated();
+        
+        // Handle featured image upload
+        if ($request->hasFile('featured_image')) {
+            // Delete old image if exists
+            if ($post->featured_image) {
+                $this->deleteImage($post->featured_image);
+            }
+            
+            $data['featured_image'] = $this->handleImageUpload($request->file('featured_image'));
+        } elseif ($request->has('remove_featured_image')) {
+            // Remove current image
+            if ($post->featured_image) {
+                $this->deleteImage($post->featured_image);
+            }
+            $data['featured_image'] = null;
+        }
+
+        $post->update($data);
 
         // Reload relationships
         $post->load(['user', 'category']);
@@ -185,5 +217,73 @@ class PostController extends Controller
         $trashedPosts = $query->paginate($perPage);
 
         return PostResource::collection($trashedPosts);
+    }
+
+    /**
+     * Handle image upload and return the stored path
+     */
+    private function handleImageUpload($file)
+    {
+        // Generate unique filename
+        $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+        
+        // Store in organized folder structure (year/month)
+        $path = $file->storeAs('posts/' . date('Y/m'), $filename, 'public');
+        
+        return $path;
+    }
+
+    /**
+     * Delete image from storage
+     */
+    private function deleteImage($imagePath)
+    {
+        if ($imagePath && \Storage::disk('public')->exists($imagePath)) {
+            \Storage::disk('public')->delete($imagePath);
+        }
+    }
+
+    /**
+     * Remove featured image from post
+     * DELETE /api/posts/{slug}/image
+     */
+    public function removeImage(Post $post)
+    {
+        // Authorization: Only the author can remove their post's image
+        if (auth()->id() !== $post->user_id) {
+            return response()->json([
+                'message' => 'You are not authorized to modify this post.'
+            ], 403);
+        }
+
+        if ($post->featured_image) {
+            $this->deleteImage($post->featured_image);
+            $post->update(['featured_image' => null]);
+        }
+
+        return response()->json([
+            'message' => 'Featured image removed successfully'
+        ], 200);
+    }
+
+    /**
+     * Generate a unique slug from title
+     */
+    private function generateSlug($title)
+    {
+        if (!$title) return null;
+        
+        // Create base slug from title
+        $baseSlug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $title), '-'));
+        $slug = $baseSlug;
+        $counter = 1;
+        
+        // Handle duplicates by appending numbers
+        while (Post::where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+        
+        return $slug;
     }
 }

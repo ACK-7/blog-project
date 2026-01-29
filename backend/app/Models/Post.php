@@ -16,6 +16,7 @@ class Post extends Model
         'title',
         'slug',
         'content',
+        'featured_image',
         'published_at',
     ];
 
@@ -40,5 +41,15 @@ class Post extends Model
     public function getRouteKeyName()
     {
         return 'slug';
+    }
+
+    /**
+     * Get the featured image URL attribute.
+     */
+    public function getFeaturedImageUrlAttribute()
+    {
+        return $this->featured_image 
+            ? url(\Storage::url($this->featured_image))
+            : null;
     }
 }

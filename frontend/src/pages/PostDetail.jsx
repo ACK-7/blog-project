@@ -110,24 +110,56 @@ const PostDetail = () => {
             </Link>
 
             <Card hover={false} className="overflow-hidden">
-                <div className="p-8">
-                    {/* Category and Date */}
-                    <div className="flex items-center justify-between mb-6">
-                        <span className="inline-block bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 px-4 py-2 rounded-full text-sm font-semibold">
-                            {post.category.name}
-                        </span>
-                        <span className="text-slate-500 text-sm flex items-center">
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            {formatDate(post.created_at)}
-                        </span>
+                {/* Featured Image */}
+                {post.featured_image_url && (
+                    <div className="relative h-96 overflow-hidden">
+                        <img
+                            src={post.featured_image_url}
+                            alt={post.title}
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                        <div className="absolute bottom-6 left-8 right-8">
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="inline-block bg-white/90 backdrop-blur-sm text-blue-800 px-4 py-2 rounded-full text-sm font-semibold">
+                                    {post.category.name}
+                                </span>
+                                <span className="text-white/90 text-sm flex items-center bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
+                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    {formatDate(post.created_at)}
+                                </span>
+                            </div>
+                            <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight">
+                                {post.title}
+                            </h1>
+                        </div>
                     </div>
+                )}
+                
+                <div className="p-8">
+                    {/* Category and Date - only show if no featured image */}
+                    {!post.featured_image_url && (
+                        <>
+                            <div className="flex items-center justify-between mb-6">
+                                <span className="inline-block bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 px-4 py-2 rounded-full text-sm font-semibold">
+                                    {post.category.name}
+                                </span>
+                                <span className="text-slate-500 text-sm flex items-center">
+                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    {formatDate(post.created_at)}
+                                </span>
+                            </div>
 
-                    {/* Title */}
-                    <h1 className="text-5xl font-bold gradient-text mb-8 leading-tight">
-                        {post.title}
-                    </h1>
+                            {/* Title */}
+                            <h1 className="text-5xl font-bold gradient-text mb-8 leading-tight">
+                                {post.title}
+                            </h1>
+                        </>
+                    )}
 
                     {/* Author */}
                     <div className="flex items-center mb-8 pb-8 border-b border-slate-200">

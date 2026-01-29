@@ -8,34 +8,7 @@ class StorePostRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // Or check: auth()->check()
-    }
-
-    protected function prepareForValidation()
-    {
-        $this->merge([
-            'user_id' => auth()->id(),
-            'slug' => $this->generateSlug($this->title),
-            'status' => $this->status ?? 'draft',
-        ]);
-    }
-
-    private function generateSlug($title)
-    {
-        if (!$title) return null;
-        
-        // Create base slug from title
-        $baseSlug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $title), '-'));
-        $slug = $baseSlug;
-        $counter = 1;
-        
-        // Handle duplicates by appending numbers
-        while (\App\Models\Post::where('slug', $slug)->exists()) {
-            $slug = $baseSlug . '-' . $counter;
-            $counter++;
-        }
-        
-        return $slug;
+        return true;
     }
 
     public function rules(): array
@@ -47,22 +20,10 @@ class StorePostRequest extends FormRequest
                 'max:255',
                 'unique:posts,title'
             ],
-            'slug' => [
-                'required',
-                'string',
-                'max:255',
-                'unique:posts,slug',
-                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'
-            ],
             'content' => [
                 'required',
                 'string',
-                'min:50' // Blog posts should have substance
-            ],
-            'excerpt' => [
-                'nullable',
-                'string',
-                'max:500'
+                'min:50'
             ],
             'category_id' => [
                 'required',
@@ -71,24 +32,14 @@ class StorePostRequest extends FormRequest
             ],
             'featured_image' => [
                 'nullable',
-                'url'
-            ],
-            'status' => [
-                'required',
-                'in:draft,published,archived'
+                'image',
+                'mimes:jpeg,png,jpg,webp',
+                'max:2048', // 2MB max
+                'dimensions:min_width=300,min_height=200,max_width=2000,max_height=2000'
             ],
             'published_at' => [
                 'nullable',
-                'date',
-                'after_or_equal:today'
-            ],
-            'tags' => [
-                'nullable',
-                'array'
-            ],
-            'tags.*' => [
-                'string',
-                'max:50'
+                'date'
             ]
         ];
     }
@@ -97,10 +48,12 @@ class StorePostRequest extends FormRequest
     {
         return [
             'title.unique' => 'A post with this title already exists',
-            'slug.unique' => 'A post with this slug already exists',
             'content.min' => 'Post content must be at least 50 characters',
             'category_id.exists' => 'The selected category does not exist',
-            'status.in' => 'Status must be draft, published, or archived',
+            'featured_image.image' => 'Featured image must be a valid image file',
+            'featured_image.mimes' => 'Featured image must be a JPEG, PNG, JPG, or WebP file',
+            'featured_image.max' => 'Featured image must not be larger than 2MB',
+            'featured_image.dimensions' => 'Featured image must be between 300x200 and 2000x2000 pixels',
         ];
     }
 }
