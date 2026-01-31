@@ -16,17 +16,40 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        // Validate incoming data
+        // Clean phone number (remove spaces and non-digit characters except +)
+        $phoneNumber = $request->phone;
+        if ($phoneNumber) {
+            $phoneNumber = preg_replace('/[^\+\d]/', '', $phoneNumber);
+        }
+        
+        // Validate incoming data with simpler phone validation
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
         ]);
+        
+        // Very simple phone validation - just check it exists and has reasonable format
+        if (empty($phoneNumber)) {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => ['phone' => ['Phone number is required.']]
+            ], 422);
+        }
+        
+        // More lenient validation - just check it starts with + and has digits
+        if (!preg_match('/^\+\d{8,15}$/', $phoneNumber)) {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => ['phone' => ['Please enter a valid phone number starting with + (e.g., +256779901499).']]
+            ], 422);
+        }
 
         // Create the user
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'phone' => $phoneNumber,
             'password' => Hash::make($validated['password']),
         ]);
 

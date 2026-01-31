@@ -29,13 +29,12 @@ export const AuthProvider = ({ children }) => {
         return response.data;
     };
 
-    const register = async (name, email, password, password_confirmation) => {
-        const response = await api.post('/register', { 
-            name, 
-            email, 
-            password, 
-            password_confirmation 
-        });
+    const register = async (name, email, phone, password, password_confirmation) => {
+        // Debug: Log the data being sent to API
+        const requestData = { name, email, phone, password, password_confirmation };
+        console.log('API request data:', requestData);
+        
+        const response = await api.post('/register', requestData);
         const { user, access_token } = response.data;
         
         localStorage.setItem('token', access_token);

@@ -4,12 +4,14 @@ import { useAuth } from '../hooks/useAuth';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
+import PhoneInput from '../components/common/PhoneInput';
 import { sweetAlert } from '../utils/sweetAlert';
 
 const Register = () => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
+        phone: '',
         password: '',
         password_confirmation: ''
     });
@@ -25,15 +27,47 @@ const Register = () => {
         });
     };
 
+    const handlePhoneChange = (phone) => {
+        setFormData({
+            ...formData,
+            phone: phone
+        });
+    };
+
+    const formatPhoneForAPI = (phone) => {
+        // Handle empty or null phone
+        if (!phone || phone.trim() === '') {
+            return '';
+        }
+        
+        // Remove any spaces or formatting characters
+        const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+        
+        // If phone doesn't start with +, add it
+        if (!cleanPhone.startsWith('+')) {
+            return '+' + cleanPhone;
+        }
+        
+        return cleanPhone;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrors({});
         setLoading(true);
 
+        // Debug: Log the form data being sent
+        console.log('Registration form data:', formData);
+        console.log('Phone before formatting:', formData.phone);
+        
+        const formattedPhone = formatPhoneForAPI(formData.phone);
+        console.log('Phone after formatting:', formattedPhone);
+
         try {
             await register(
                 formData.name,
                 formData.email,
+                formattedPhone, 
                 formData.password,
                 formData.password_confirmation
             );
@@ -46,6 +80,9 @@ const Register = () => {
                 navigate('/dashboard');
             });
         } catch (error) {
+            console.error('Registration error:', error);
+            console.error('Error response:', error.response?.data);
+            
             if (error.response?.data?.errors) {
                 setErrors(error.response.data.errors);
                 sweetAlert.toast.error('Please fix the validation errors below');
@@ -99,6 +136,15 @@ const Register = () => {
                             error={errors.email?.[0]}
                             placeholder="Enter your email"
                             required
+                        />
+
+                        <PhoneInput
+                            label="Phone Number"
+                            value={formData.phone}
+                            onChange={handlePhoneChange}
+                            error={errors.phone?.[0]}
+                            required
+                            disabled={loading}
                         />
 
                         <Input
