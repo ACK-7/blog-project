@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CategoryController;
 use App\Http\Controllers\API\PostController;
+use App\Http\Controllers\API\CommentController;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -14,6 +15,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{category:slug}', [CategoryController::class, 'show']);
 Route::get('/posts', [PostController::class, 'index']);
+Route::get('/posts/{post:slug}/comments', [CommentController::class, 'index']); // Public: view comments
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -31,6 +33,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/posts/{slug}/restore', [PostController::class, 'restore']); // Restore post
     Route::delete('/posts/{slug}/force', [PostController::class, 'forceDestroy']); // Hard delete
     Route::delete('/posts/{post:slug}/image', [PostController::class, 'removeImage']); // Remove featured image
+    
+    // Comments - Protected routes
+    Route::post('/posts/{post:slug}/comments', [CommentController::class, 'store']); // Create comment
+    Route::put('/comments/{comment}', [CommentController::class, 'update']); // Update comment
+    Route::delete('/comments/{comment}', [CommentController::class, 'destroy']); // Delete comment
     
     // Posts - General CRUD (these come after specific routes)
     Route::post('/posts', [PostController::class, 'store']);

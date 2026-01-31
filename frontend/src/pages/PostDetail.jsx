@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Spinner from '../components/common/Spinner';
+import CommentList from '../components/comments/CommentList';
 import { sweetAlert } from '../utils/sweetAlert';
 
 const PostDetail = () => {
@@ -200,6 +201,11 @@ const PostDetail = () => {
                     )}
                 </div>
             </Card>
+
+            {/* Comments Section */}
+            <div className="mt-12">
+                <CommentList postSlug={slug} />
+            </div>
         </div>
     );
 };
