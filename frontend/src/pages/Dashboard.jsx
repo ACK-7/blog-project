@@ -6,6 +6,7 @@ import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import Spinner from '../components/common/Spinner';
 import DashboardPostCard from '../components/dashboard/DashboardPostCard';
+import StatusFilter from '../components/dashboard/StatusFilter';
 import Pagination from '../components/common/Pagination';
 import usePagination from '../hooks/usePagination';
 import { sweetAlert } from '../utils/sweetAlert';
@@ -14,6 +15,8 @@ const Dashboard = () => {
     const { user } = useAuth();
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activeFilter, setActiveFilter] = useState('all');
+    const [statusCounts, setStatusCounts] = useState({});
     
     const {
         currentPage,
@@ -27,17 +30,30 @@ const Dashboard = () => {
 
     useEffect(() => {
         fetchUserPosts();
-    }, [currentPage, perPage, user.id]);
+    }, [currentPage, perPage, user.id, activeFilter]);
 
     const fetchUserPosts = async () => {
         setLoading(true);
         try {
+            let endpoint = '/posts';
             const params = new URLSearchParams({
                 ...getPaginationParams(),
                 user_id: user.id
             });
+
+            // Use specific endpoints for different statuses
+            if (activeFilter === 'draft') {
+                endpoint = '/posts/drafts';
+                params.delete('user_id'); // Not needed for drafts endpoint
+            } else if (activeFilter === 'scheduled') {
+                endpoint = '/posts/scheduled';
+                params.delete('user_id'); // Not needed for scheduled endpoint
+            } else if (activeFilter !== 'all') {
+                // For published or other specific statuses
+                params.append('status', activeFilter);
+            }
             
-            const response = await api.get(`/posts?${params}`);
+            const response = await api.get(`${endpoint}?${params}`);
             
             // Handle paginated response
             setPosts(response.data.data || []);
@@ -65,6 +81,82 @@ const Dashboard = () => {
             setPosts([]);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchStatusCounts = async () => {
+        try {
+            // Fetch counts for each status
+            const [allResponse, publishedResponse, draftResponse, scheduledResponse] = await Promise.all([
+                api.get(`/posts?user_id=${user.id}&per_page=1`),
+                api.get(`/posts?user_id=${user.id}&status=published&per_page=1`),
+                api.get(`/posts/drafts?per_page=1`),
+                api.get(`/posts/scheduled?per_page=1`)
+            ]);
+
+            setStatusCounts({
+                all: allResponse.data.meta?.total || 0,
+                published: publishedResponse.data.meta?.total || 0,
+                draft: draftResponse.data.meta?.total || 0,
+                scheduled: scheduledResponse.data.meta?.total || 0
+            });
+        } catch (error) {
+            console.error('Error fetching status counts:', error);
+        }
+    };
+
+    const handleFilterChange = (filter) => {
+        setActiveFilter(filter);
+        handlePageChange(1); // Reset to first page when changing filter
+    };
+
+    // Fetch status counts on component mount
+    useEffect(() => {
+        fetchStatusCounts();
+    }, [user.id]);
+
+    const handlePublish = async (postSlug, postTitle) => {
+        const result = await sweetAlert.confirm(
+            'Publish Draft?',
+            `Are you sure you want to publish "${postTitle}"? It will become visible to all readers.`,
+            'Yes, publish it',
+            'Cancel'
+        );
+
+        if (result.isConfirmed) {
+            try {
+                sweetAlert.loading('Publishing Post...', 'Please wait while we publish your post.');
+                
+                // Get the current post data first
+                const postResponse = await api.get(`/posts/${postSlug}`);
+                const post = postResponse.data.data;
+                
+                // Update with current timestamp as published_at
+                await api.put(`/posts/${postSlug}`, {
+                    title: post.title,
+                    content: post.content,
+                    category_id: post.category.id,
+                    published_at: new Date().toISOString().slice(0, 16)
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                // Refresh the posts and status counts
+                await Promise.all([fetchUserPosts(), fetchStatusCounts()]);
+                
+                sweetAlert.success(
+                    'Post Published!',
+                    'Your post is now live and visible to all readers.'
+                );
+            } catch (error) {
+                console.error('Error publishing post:', error);
+                sweetAlert.error(
+                    'Publish Failed',
+                    'There was an error publishing your post. Please try again.'
+                );
+            }
         }
     };
 
@@ -122,6 +214,13 @@ const Dashboard = () => {
                 </Link>
             </div>
 
+            {/* Status Filter */}
+            <StatusFilter 
+                activeFilter={activeFilter}
+                onFilterChange={handleFilterChange}
+                counts={statusCounts}
+            />
+
             {loading ? (
                 <div className="flex justify-center items-center h-64">
                     <Spinner size="lg" />
@@ -157,6 +256,7 @@ const Dashboard = () => {
                             key={post.id} 
                             post={post} 
                             onDelete={handleDelete}
+                            onPublish={handlePublish}
                         />
                     ))}
                 </div>

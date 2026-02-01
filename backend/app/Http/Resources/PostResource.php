@@ -26,6 +26,13 @@ class PostResource extends JsonResource
             'featured_image_url' => $this->featured_image ? url(\Storage::url($this->featured_image)) : null,
             'published_at' => $this->published_at ? $this->published_at->format(self::DATE_FORMAT) : null,
             
+            // Status information
+            'status' => $this->status,
+            'status_label' => $this->status_label,
+            'is_published' => $this->is_published,
+            'is_draft' => $this->is_draft,
+            'is_scheduled' => $this->is_scheduled,
+            
             // Include related data
             'author' => [
                 'id' => $this->user->id,

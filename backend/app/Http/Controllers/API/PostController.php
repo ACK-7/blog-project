@@ -30,10 +30,25 @@ class PostController extends Controller
             $query->where('category_id', $request->category_id);
         }
 
-        // Filter by published posts only
-        if ($request->has('published')) {
-            $query->whereNotNull('published_at')
-                  ->where('published_at', '<=', now());
+        // Filter by status if provided (for dashboard)
+        if ($request->has('status')) {
+            switch ($request->status) {
+                case 'draft':
+                    $query->drafts();
+                    break;
+                case 'scheduled':
+                    $query->scheduled();
+                    break;
+                case 'published':
+                    $query->published();
+                    break;
+            }
+        } else {
+            // Default: only show published posts for public access
+            // Unless user_id is specified (dashboard access)
+            if (!$request->has('user_id')) {
+                $query->published();
+            }
         }
 
         // Always paginate with default or requested per_page
@@ -217,6 +232,42 @@ class PostController extends Controller
         $trashedPosts = $query->paginate($perPage);
 
         return PostResource::collection($trashedPosts);
+    }
+
+    /**
+     * Get user's draft posts.
+     * GET /api/posts/drafts
+     */
+    public function drafts(Request $request)
+    {
+        $query = Post::drafts()
+            ->where('user_id', auth()->id())
+            ->with(['user', 'category'])
+            ->orderBy('updated_at', 'desc'); // Latest updated first
+
+        // Always paginate with default or requested per_page
+        $perPage = min((int)$request->get('per_page', 9), 100); // Default 9, max 100
+        $drafts = $query->paginate($perPage);
+
+        return PostResource::collection($drafts);
+    }
+
+    /**
+     * Get user's scheduled posts.
+     * GET /api/posts/scheduled
+     */
+    public function scheduled(Request $request)
+    {
+        $query = Post::scheduled()
+            ->where('user_id', auth()->id())
+            ->with(['user', 'category'])
+            ->orderBy('published_at', 'asc'); // Earliest scheduled first
+
+        // Always paginate with default or requested per_page
+        $perPage = min((int)$request->get('per_page', 9), 100); // Default 9, max 100
+        $scheduled = $query->paginate($perPage);
+
+        return PostResource::collection($scheduled);
     }
 
     /**

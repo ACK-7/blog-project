@@ -62,6 +62,47 @@ const PostDetail = () => {
         }
     };
 
+    const handlePublishDraft = async () => {
+        const result = await sweetAlert.confirm(
+            'Publish Draft?',
+            `Are you sure you want to publish "${post.title}"? It will become visible to all readers.`,
+            'Yes, publish it',
+            'Cancel'
+        );
+
+        if (result.isConfirmed) {
+            try {
+                sweetAlert.loading('Publishing Post...', 'Please wait while we publish your post.');
+                
+                // Update the post with current timestamp as published_at
+                await api.put(`/posts/${slug}`, {
+                    title: post.title,
+                    content: post.content,
+                    category_id: post.category.id,
+                    published_at: new Date().toISOString().slice(0, 16)
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                sweetAlert.success(
+                    'Post Published!',
+                    'Your post is now live and visible to all readers.'
+                ).then(() => {
+                    // Refresh the page to show updated status
+                    window.location.reload();
+                });
+            } catch (error) {
+                console.error('Error publishing post:', error);
+                sweetAlert.error(
+                    'Publish Failed',
+                    'There was an error publishing your post. Please try again.'
+                );
+            }
+        }
+    };
+
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString('en-US', {
             year: 'numeric',
@@ -109,6 +150,36 @@ const PostDetail = () => {
                 </svg>
                 Back to all posts
             </Link>
+
+            {/* Draft Notice */}
+            {post?.status === 'draft' && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+                    <div className="flex items-center">
+                        <svg className="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <div>
+                            <p className="text-yellow-800 font-medium">This is a draft post</p>
+                            <p className="text-yellow-700 text-sm">Only you can see this post. It will be visible to others once published.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Scheduled Notice */}
+            {post?.status === 'scheduled' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                    <div className="flex items-center">
+                        <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                            <p className="text-blue-800 font-medium">This post is scheduled</p>
+                            <p className="text-blue-700 text-sm">It will be published on {new Date(post.published_at).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <Card hover={false} className="overflow-hidden">
                 {/* Featured Image */}
@@ -180,7 +251,7 @@ const PostDetail = () => {
                         </div>
                     </div>
 
-                    {/* Edit/Delete Buttons (only for author) */}
+                    {/* Edit/Delete/Publish Buttons (only for author) */}
                     {isAuthor && (
                         <div className="flex gap-4 pt-8 border-t border-slate-200">
                             <Link to={`/posts/${post.slug}/edit`}>
@@ -191,6 +262,17 @@ const PostDetail = () => {
                                     Edit Post
                                 </Button>
                             </Link>
+                            
+                            {/* Show Publish button for drafts */}
+                            {post.status === 'draft' && (
+                                <Button variant="success" onClick={handlePublishDraft} className="flex items-center bg-green-600 hover:bg-green-700">
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Publish Now
+                                </Button>
+                            )}
+                            
                             <Button variant="danger" onClick={handleDelete} className="flex items-center">
                                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -202,10 +284,12 @@ const PostDetail = () => {
                 </div>
             </Card>
 
-            {/* Comments Section */}
-            <div className="mt-12">
-                <CommentList postSlug={slug} />
-            </div>
+            {/* Comments Section - Only show for published posts */}
+            {post?.status === 'published' && (
+                <div className="mt-12">
+                    <CommentList postSlug={slug} postStatus={post?.status} />
+                </div>
+            )}
         </div>
     );
 };

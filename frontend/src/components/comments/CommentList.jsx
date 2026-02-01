@@ -6,7 +6,7 @@ import Pagination from '../common/Pagination';
 import Spinner from '../common/Spinner';
 import { sweetAlert } from '../../utils/sweetAlert';
 
-const CommentList = ({ postSlug }) => {
+const CommentList = ({ postSlug, postStatus = 'published' }) => {
     const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -115,52 +115,76 @@ const CommentList = ({ postSlug }) => {
                 </h3>
             </div>
 
-            {/* Comment Form */}
-            <CommentForm onSubmit={handleSubmitComment} loading={submitting} />
-
-            {/* Comments List */}
-            {loading ? (
-                <div className="flex justify-center py-8">
-                    <Spinner size="lg" />
-                </div>
-            ) : comments.length > 0 ? (
-                <div className="space-y-6">
-                    {comments.map((comment) => (
-                        <CommentItem
-                            key={comment.id}
-                            comment={comment}
-                            onUpdate={handleUpdateComment}
-                            onDelete={handleDeleteComment}
-                        />
-                    ))}
-                    
-                    {/* Pagination */}
-                    {pagination && pagination.last_page > 1 && (
-                        <div className="flex justify-center pt-6">
-                            <Pagination
-                                currentPage={pagination.current_page}
-                                totalPages={pagination.last_page}
-                                onPageChange={handlePageChange}
-                                showInfo={true}
-                                totalItems={pagination.total}
-                                itemsPerPage={pagination.per_page}
-                                itemName="comment"
-                            />
-                        </div>
-                    )}
-                </div>
-            ) : (
-                <div className="text-center py-12">
+            {/* Show message for non-published posts */}
+            {postStatus !== 'published' ? (
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center">
                     <div className="max-w-md mx-auto">
                         <svg className="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                         </svg>
-                        <h4 className="text-xl font-semibold text-slate-600 mb-2">No comments yet</h4>
+                        <h4 className="text-xl font-semibold text-slate-600 mb-2">
+                            {postStatus === 'draft' ? 'Comments Disabled for Drafts' : 'Comments Not Available'}
+                        </h4>
                         <p className="text-slate-500">
-                            Be the first to share your thoughts on this post!
+                            {postStatus === 'draft' 
+                                ? 'Comments will be available once this post is published.'
+                                : postStatus === 'scheduled'
+                                ? 'Comments will be available when this post is published.'
+                                : 'Comments are not available for this post.'
+                            }
                         </p>
                     </div>
                 </div>
+            ) : (
+                <>
+                    {/* Comment Form */}
+                    <CommentForm onSubmit={handleSubmitComment} loading={submitting} />
+
+                    {/* Comments List */}
+                    {loading ? (
+                        <div className="flex justify-center py-8">
+                            <Spinner size="lg" />
+                        </div>
+                    ) : comments.length > 0 ? (
+                        <div className="space-y-6">
+                            {comments.map((comment) => (
+                                <CommentItem
+                                    key={comment.id}
+                                    comment={comment}
+                                    onUpdate={handleUpdateComment}
+                                    onDelete={handleDeleteComment}
+                                />
+                            ))}
+                            
+                            {/* Pagination */}
+                            {pagination && pagination.last_page > 1 && (
+                                <div className="flex justify-center pt-6">
+                                    <Pagination
+                                        currentPage={pagination.current_page}
+                                        totalPages={pagination.last_page}
+                                        onPageChange={handlePageChange}
+                                        showInfo={true}
+                                        totalItems={pagination.total}
+                                        itemsPerPage={pagination.per_page}
+                                        itemName="comment"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="text-center py-12">
+                            <div className="max-w-md mx-auto">
+                                <svg className="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                                <h4 className="text-xl font-semibold text-slate-600 mb-2">No comments yet</h4>
+                                <p className="text-slate-500">
+                                    Be the first to share your thoughts on this post!
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );

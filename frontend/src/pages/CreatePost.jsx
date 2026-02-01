@@ -44,7 +44,28 @@ const CreatePost = () => {
         });
     };
 
-    const handleSubmit = async (e) => {
+    // Helper function to check if the selected date is in the future
+    const isScheduledPost = () => {
+        if (!formData.published_at) return false;
+        
+        const selectedDate = new Date(formData.published_at);
+        const now = new Date();
+        
+        // Add a 1-minute buffer to account for processing time
+        const oneMinuteFromNow = new Date(now.getTime() + 60000);
+        
+        return selectedDate > oneMinuteFromNow;
+    };
+
+    // Helper function to get the correct action for submission
+    const getPublishAction = () => {
+        if (isScheduledPost()) {
+            return 'schedule';
+        }
+        return 'publish';
+    };
+
+    const handleSubmit = async (e, action = 'publish') => {
         e.preventDefault();
         setErrors({});
         
@@ -78,7 +99,20 @@ const CreatePost = () => {
             
             // Append form fields
             Object.keys(formData).forEach(key => {
-                if (formData[key]) {
+                if (key === 'published_at') {
+                    // Handle publish action
+                    if (action === 'draft') {
+                        // Don't set published_at for drafts
+                        return;
+                    } else if (action === 'publish') {
+                        // Set to now if not specified
+                        const publishTime = formData[key] || new Date().toISOString().slice(0, 16);
+                        submitData.append(key, publishTime);
+                    } else if (formData[key]) {
+                        // Use specified time for scheduled posts
+                        submitData.append(key, formData[key]);
+                    }
+                } else if (formData[key]) {
                     submitData.append(key, formData[key]);
                 }
             });
@@ -94,11 +128,25 @@ const CreatePost = () => {
                 },
             });
             
-            // Show success alert
-            sweetAlert.success(
-                'Post Created Successfully!',
-                'Your post has been created and is ready to be shared.'
-            ).then(() => {
+            // Show success alert based on action
+            const messages = {
+                draft: {
+                    title: 'Draft Saved Successfully!',
+                    text: 'Your post has been saved as a draft.'
+                },
+                publish: {
+                    title: 'Post Published Successfully!',
+                    text: 'Your post is now live and visible to readers.'
+                },
+                schedule: {
+                    title: 'Post Scheduled Successfully!',
+                    text: 'Your post will be published at the scheduled time.'
+                }
+            };
+            
+            const message = messages[action] || messages.publish;
+            
+            sweetAlert.success(message.title, message.text).then(() => {
                 navigate(`/posts/${response.data.data.slug}`);
             });
         } catch (error) {
@@ -233,37 +281,66 @@ const CreatePost = () => {
                         error={errors.published_at?.[0]}
                     />
 
-                    <div className="flex gap-4 pt-4">
-                        <Button type="submit" disabled={loading} className="flex-1">
+                    <div className="flex gap-3 pt-4">
+                        <Button 
+                            type="button" 
+                            onClick={(e) => handleSubmit(e, 'draft')}
+                            variant="secondary"
+                            disabled={loading}
+                            className="flex-1"
+                        >
                             {loading ? (
                                 <div className="flex items-center justify-center">
-                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
-                                    Creating Post...
+                                    Saving...
                                 </div>
                             ) : (
                                 <div className="flex items-center justify-center">
-                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                     </svg>
-                                    Create Post
+                                    Save Draft
                                 </div>
                             )}
                         </Button>
+                        
+                        <Button 
+                            type="submit" 
+                            onClick={(e) => handleSubmit(e, getPublishAction())}
+                            disabled={loading} 
+                            className="flex-1"
+                        >
+                            {loading ? (
+                                <div className="flex items-center justify-center">
+                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Publishing...
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center">
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={isScheduledPost() ? "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" : "M5 13l4 4L19 7"} />
+                                    </svg>
+                                    {isScheduledPost() ? 'Schedule Post' : 'Publish Now'}
+                                </div>
+                            )}
+                        </Button>
+                        
                         <Button 
                             type="button" 
                             variant="secondary"
                             onClick={() => navigate('/dashboard')}
-                            className="flex-1"
+                            disabled={loading}
+                            className="px-4"
                         >
-                            <div className="flex items-center justify-center">
-                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                                Cancel
-                            </div>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                         </Button>
                     </div>
                 </form>
