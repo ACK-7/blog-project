@@ -75,9 +75,9 @@ const Register = () => {
             // Show success alert
             sweetAlert.success(
                 'Account Created Successfully!',
-                'Welcome to MyBlog! You can now start creating posts.'
+                'Please check your email to verify your account before accessing the dashboard.'
             ).then(() => {
-                navigate('/dashboard');
+                navigate('/email/verify');
             });
         } catch (error) {
             console.error('Registration error:', error);

@@ -4,9 +4,12 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Notifications\VerificationCodeEmail;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Auth\Events\Verified;
 
 class AuthController extends Controller
 {
@@ -45,7 +48,7 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Create the user
+        // Create the user (email_verified_at will be null)
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -53,15 +56,20 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
+        // Generate verification code and send email
+        $verificationCode = $user->generateVerificationCode();
+        $user->notify(new VerificationCodeEmail($verificationCode));
+
         // Create an API token for the user
         $token = $user->createToken('auth_token')->plainTextToken;
 
         // Return JSON response
         return response()->json([
-            'message' => 'User registered successfully',
+            'message' => 'User registered successfully. Please check your email for the verification code.',
             'user' => $user,
             'access_token' => $token,
             'token_type' => 'Bearer',
+            'email_verified' => false,
         ], 201);
     }
 
@@ -96,6 +104,7 @@ class AuthController extends Controller
             'user' => $user,
             'access_token' => $token,
             'token_type' => 'Bearer',
+            'email_verified' => $user->hasVerifiedEmail(),
         ], 200);
     }
 
@@ -121,6 +130,64 @@ class AuthController extends Controller
     {
         return response()->json([
             'user' => $request->user(),
+            'email_verified' => $request->user()->hasVerifiedEmail(),
+        ], 200);
+    }
+
+    /**
+     * Send verification code email
+     * POST /api/email/verification-code
+     */
+    public function sendVerificationCode(Request $request)
+    {
+        if ($request->user()->hasVerifiedEmail()) {
+            return response()->json([
+                'message' => 'Email already verified.'
+            ], 400);
+        }
+
+        // Generate new verification code
+        $verificationCode = $request->user()->generateVerificationCode();
+        $request->user()->notify(new VerificationCodeEmail($verificationCode));
+
+        return response()->json([
+            'message' => 'Verification code sent successfully.'
+        ], 200);
+    }
+
+    /**
+     * Verify email with code
+     * POST /api/email/verify-code
+     */
+    public function verifyEmailWithCode(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string|size:6'
+        ]);
+
+        $user = $request->user();
+
+        if ($user->hasVerifiedEmail()) {
+            return response()->json([
+                'message' => 'Email already verified.',
+                'email_verified' => true
+            ], 200);
+        }
+
+        if (!$user->isValidVerificationCode($request->code)) {
+            return response()->json([
+                'message' => 'Invalid or expired verification code.',
+                'email_verified' => false
+            ], 400);
+        }
+
+        // Mark email as verified
+        $user->markEmailAsVerifiedWithCode();
+        event(new Verified($user));
+
+        return response()->json([
+            'message' => 'Email verified successfully.',
+            'email_verified' => true
         ], 200);
     }
 }

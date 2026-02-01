@@ -17,13 +17,21 @@ Route::get('/categories/{category:slug}', [CategoryController::class, 'show']);
 Route::get('/posts', [PostController::class, 'index']);
 Route::get('/posts/{post:slug}/comments', [CommentController::class, 'index']); // Public: view comments
 
-// Protected routes
+// Auth routes (require authentication but not email verification)
 Route::middleware('auth:sanctum')->group(function () {
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     
-    // Categories - only authenticated users
+    // Email verification with codes
+    Route::post('/email/verification-code', [AuthController::class, 'sendVerificationCode'])
+        ->middleware(['throttle:6,1']);
+    Route::post('/email/verify-code', [AuthController::class, 'verifyEmailWithCode']);
+});
+
+// Protected routes (require authentication and email verification)
+Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+    // Categories - only authenticated and verified users
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::put('/categories/{category:slug}', [CategoryController::class, 'update']);
     Route::delete('/categories/{category:slug}', [CategoryController::class, 'destroy']);

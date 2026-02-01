@@ -11,11 +11,34 @@ import CreatePost from './pages/CreatePost';
 import EditPost from './pages/EditPost';
 import Categories from './pages/Categories';
 import Trash from './pages/Trash';
+import EmailVerification from './pages/EmailVerification';
+import EmailVerificationGuard from './components/common/EmailVerificationGuard';
 import Spinner from './components/common/Spinner';
 import './index.css';
 
-// Protected Route Component
+// Protected Route Component (requires authentication AND email verification)
 const ProtectedRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  return user ? (
+    <EmailVerificationGuard>
+      {children}
+    </EmailVerificationGuard>
+  ) : (
+    <Navigate to="/login" />
+  );
+};
+
+// Auth Route Component (requires authentication but not email verification)
+const AuthRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -71,7 +94,17 @@ function AppContent() {
             } 
           />
 
-          {/* Protected Routes */}
+          {/* Email Verification Route (requires auth but not verification) */}
+          <Route 
+            path="/email/verify" 
+            element={
+              <AuthRoute>
+                <EmailVerification />
+              </AuthRoute>
+            } 
+          />
+
+          {/* Protected Routes (require auth AND email verification) */}
           <Route 
             path="/dashboard" 
             element={
