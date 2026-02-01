@@ -19,11 +19,8 @@ class CategoryResource extends JsonResource
             'slug' => $this->slug,
             'description' => $this->description,
             
-            // Only include posts_count if posts relationship is loaded (N+1 prevention)
-            'posts_count' => $this->when($this->relationLoaded('posts'), fn() => $this->posts->count()),
-            
-            // Alternative: use withCount in query for better performance
-            // 'posts_count' => $this->posts_count ?? 0,
+            // Use withCount result for better performance
+            'posts_count' => $this->posts_count ?? 0,
             
             // Conditionally include full posts if requested
             'posts' => PostResource::collection($this->whenLoaded('posts')),

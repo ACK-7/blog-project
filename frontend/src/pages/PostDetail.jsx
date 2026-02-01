@@ -166,21 +166,6 @@ const PostDetail = () => {
                 </div>
             )}
 
-            {/* Scheduled Notice */}
-            {post?.status === 'scheduled' && (
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-                    <div className="flex items-center">
-                        <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <div>
-                            <p className="text-blue-800 font-medium">This post is scheduled</p>
-                            <p className="text-blue-700 text-sm">It will be published on {new Date(post.published_at).toLocaleDateString()}</p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             <Card hover={false} className="overflow-hidden">
                 {/* Featured Image */}
                 {post.featured_image_url && (

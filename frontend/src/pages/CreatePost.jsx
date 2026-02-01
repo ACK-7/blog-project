@@ -5,19 +5,21 @@ import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import ImageUpload from '../components/common/ImageUpload';
+import CategoryModal from '../components/common/CategoryModal';
 import { sweetAlert } from '../utils/sweetAlert';
 
 const CreatePost = () => {
     const [formData, setFormData] = useState({
         title: '',
         content: '',
-        category_id: '',
-        published_at: ''
+        category_id: ''
     });
     const [categories, setCategories] = useState([]);
+    const [categoriesLoading, setCategoriesLoading] = useState(true);
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [featuredImage, setFeaturedImage] = useState(null);
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -26,6 +28,7 @@ const CreatePost = () => {
 
     const fetchCategories = async () => {
         try {
+            setCategoriesLoading(true);
             const response = await api.get('/categories');
             setCategories(response.data.data);
         } catch (error) {
@@ -34,6 +37,8 @@ const CreatePost = () => {
                 'Failed to Load Categories',
                 'There was an error loading categories. Please refresh the page.'
             );
+        } finally {
+            setCategoriesLoading(false);
         }
     };
 
@@ -46,23 +51,24 @@ const CreatePost = () => {
 
     // Helper function to check if the selected date is in the future
     const isScheduledPost = () => {
-        if (!formData.published_at) return false;
-        
-        const selectedDate = new Date(formData.published_at);
-        const now = new Date();
-        
-        // Add a 1-minute buffer to account for processing time
-        const oneMinuteFromNow = new Date(now.getTime() + 60000);
-        
-        return selectedDate > oneMinuteFromNow;
+        return false; // No scheduling anymore
     };
 
     // Helper function to get the correct action for submission
     const getPublishAction = () => {
-        if (isScheduledPost()) {
-            return 'schedule';
-        }
-        return 'publish';
+        return 'publish'; // Always publish when not saving as draft
+    };
+
+    const handleCategoryCreated = (newCategory) => {
+        // Add the new category to the list
+        setCategories(prev => [newCategory, ...prev]);
+        // Auto-select the new category
+        setFormData(prev => ({
+            ...prev,
+            category_id: newCategory.id
+        }));
+        // Ensure categories are no longer loading
+        setCategoriesLoading(false);
     };
 
     const handleSubmit = async (e, action = 'publish') => {
@@ -99,23 +105,21 @@ const CreatePost = () => {
             
             // Append form fields
             Object.keys(formData).forEach(key => {
-                if (key === 'published_at') {
-                    // Handle publish action
-                    if (action === 'draft') {
-                        // Don't set published_at for drafts
-                        return;
-                    } else if (action === 'publish') {
-                        // Set to now if not specified
-                        const publishTime = formData[key] || new Date().toISOString().slice(0, 16);
-                        submitData.append(key, publishTime);
-                    } else if (formData[key]) {
-                        // Use specified time for scheduled posts
-                        submitData.append(key, formData[key]);
-                    }
-                } else if (formData[key]) {
+                if (formData[key]) {
                     submitData.append(key, formData[key]);
                 }
             });
+            
+            // Handle published_at based on action
+            if (action === 'publish') {
+                // Set to now for immediate publishing
+                const publishTime = new Date().toISOString().slice(0, 16);
+                submitData.append('published_at', publishTime);
+                console.log('Publishing post with published_at:', publishTime);
+            } else {
+                console.log('Saving as draft (no published_at)');
+            }
+            // For drafts, don't append published_at (leave it null)
             
             // Append image if selected
             if (featuredImage) {
@@ -137,10 +141,6 @@ const CreatePost = () => {
                 publish: {
                     title: 'Post Published Successfully!',
                     text: 'Your post is now live and visible to readers.'
-                },
-                schedule: {
-                    title: 'Post Scheduled Successfully!',
-                    text: 'Your post will be published at the scheduled time.'
                 }
             };
             
@@ -216,20 +216,44 @@ const CreatePost = () => {
                         <label className="block text-sm font-semibold text-slate-700 mb-2">
                             Category
                         </label>
-                        <select
-                            name="category_id"
-                            value={formData.category_id}
-                            onChange={handleChange}
-                            className="w-full px-4 py-3 bg-white/50 backdrop-blur-sm border-2 border-slate-200 rounded-xl transition-all duration-300 focus:ring-4 focus:ring-blue-200 focus:border-blue-500 focus:bg-white hover:border-slate-300"
-                            required
-                        >
-                            <option value="">Select a category</option>
-                            {categories.map((category) => (
-                                <option key={category.id} value={category.id}>
-                                    {category.name}
+                        <div className="flex gap-2">
+                            <select
+                                name="category_id"
+                                value={formData.category_id}
+                                onChange={handleChange}
+                                className="flex-1 px-4 py-3 bg-white/50 backdrop-blur-sm border-2 border-slate-200 rounded-xl transition-all duration-300 focus:ring-4 focus:ring-blue-200 focus:border-blue-500 focus:bg-white hover:border-slate-300"
+                                required
+                                disabled={categoriesLoading}
+                            >
+                                <option value="">
+                                    {categoriesLoading ? 'Loading categories...' : 'Select a category'}
                                 </option>
-                            ))}
-                        </select>
+                                {!categoriesLoading && categories.map((category) => (
+                                    <option key={category.id} value={category.id}>
+                                        {category.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => setShowCategoryModal(true)}
+                                className="px-4 py-3 flex items-center justify-center"
+                                title="Create new category"
+                                disabled={categoriesLoading}
+                            >
+                                {categoriesLoading ? (
+                                    <svg className="w-5 h-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                ) : (
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                )}
+                            </Button>
+                        </div>
                         {errors.category_id && (
                             <p className="mt-2 text-sm text-red-600 flex items-center">
                                 <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -272,15 +296,6 @@ const CreatePost = () => {
                         </div>
                     </div>
 
-                    <Input
-                        label="Publish Date (Optional)"
-                        type="datetime-local"
-                        name="published_at"
-                        value={formData.published_at}
-                        onChange={handleChange}
-                        error={errors.published_at?.[0]}
-                    />
-
                     <div className="flex gap-3 pt-4">
                         <Button 
                             type="button" 
@@ -309,7 +324,7 @@ const CreatePost = () => {
                         
                         <Button 
                             type="submit" 
-                            onClick={(e) => handleSubmit(e, getPublishAction())}
+                            onClick={(e) => handleSubmit(e, 'publish')}
                             disabled={loading} 
                             className="flex-1"
                         >
@@ -324,9 +339,9 @@ const CreatePost = () => {
                             ) : (
                                 <div className="flex items-center justify-center">
                                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={isScheduledPost() ? "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" : "M5 13l4 4L19 7"} />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                                     </svg>
-                                    {isScheduledPost() ? 'Schedule Post' : 'Publish Now'}
+                                    Publish Now
                                 </div>
                             )}
                         </Button>
@@ -345,6 +360,13 @@ const CreatePost = () => {
                     </div>
                 </form>
             </Card>
+
+            {/* Category Modal */}
+            <CategoryModal
+                isOpen={showCategoryModal}
+                onClose={() => setShowCategoryModal(false)}
+                onCategoryCreated={handleCategoryCreated}
+            />
         </div>
     );
 };

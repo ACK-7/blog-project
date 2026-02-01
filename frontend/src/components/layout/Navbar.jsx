@@ -41,6 +41,9 @@ const Navbar = () => {
                                     <Link to="/dashboard" className="text-slate-600 hover:text-slate-800 px-4 py-2 rounded-lg hover:bg-white/50 transition-all">
                                         Dashboard
                                     </Link>
+                                    <Link to="/categories" className="text-slate-600 hover:text-slate-800 px-4 py-2 rounded-lg hover:bg-white/50 transition-all">
+                                        Categories
+                                    </Link>
                                     <Link to="/trash" className="text-slate-600 hover:text-slate-800 px-4 py-2 rounded-lg hover:bg-white/50 transition-all">
                                         Trash
                                     </Link>

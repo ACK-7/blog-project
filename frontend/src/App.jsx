@@ -9,6 +9,7 @@ import PostDetail from './pages/PostDetail';
 import Dashboard from './pages/Dashboard';
 import CreatePost from './pages/CreatePost';
 import EditPost from './pages/EditPost';
+import Categories from './pages/Categories';
 import Trash from './pages/Trash';
 import Spinner from './components/common/Spinner';
 import './index.css';
@@ -92,6 +93,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <EditPost />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/categories" 
+            element={
+              <ProtectedRoute>
+                <Categories />
               </ProtectedRoute>
             } 
           />

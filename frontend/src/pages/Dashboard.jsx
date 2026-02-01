@@ -45,13 +45,12 @@ const Dashboard = () => {
             if (activeFilter === 'draft') {
                 endpoint = '/posts/drafts';
                 params.delete('user_id'); // Not needed for drafts endpoint
-            } else if (activeFilter === 'scheduled') {
-                endpoint = '/posts/scheduled';
-                params.delete('user_id'); // Not needed for scheduled endpoint
             } else if (activeFilter !== 'all') {
                 // For published or other specific statuses
                 params.append('status', activeFilter);
             }
+            
+            console.log('Fetching posts from:', `${endpoint}?${params}`); // Debug log
             
             const response = await api.get(`${endpoint}?${params}`);
             
@@ -74,9 +73,16 @@ const Dashboard = () => {
             }
         } catch (error) {
             console.error('Error fetching posts:', error);
+            console.error('Error details:', {
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                data: error.response?.data,
+                message: error.message
+            });
+            
             sweetAlert.error(
                 'Failed to Load Posts',
-                'There was an error loading your posts. Please try again.'
+                `There was an error loading your posts: ${error.response?.data?.message || error.message}`
             );
             setPosts([]);
         } finally {
@@ -86,19 +92,17 @@ const Dashboard = () => {
 
     const fetchStatusCounts = async () => {
         try {
-            // Fetch counts for each status
-            const [allResponse, publishedResponse, draftResponse, scheduledResponse] = await Promise.all([
+            // Fetch counts for each status (only all, published, and draft)
+            const [allResponse, publishedResponse, draftResponse] = await Promise.all([
                 api.get(`/posts?user_id=${user.id}&per_page=1`),
                 api.get(`/posts?user_id=${user.id}&status=published&per_page=1`),
-                api.get(`/posts/drafts?per_page=1`),
-                api.get(`/posts/scheduled?per_page=1`)
+                api.get(`/posts/drafts?per_page=1`)
             ]);
 
             setStatusCounts({
                 all: allResponse.data.meta?.total || 0,
                 published: publishedResponse.data.meta?.total || 0,
-                draft: draftResponse.data.meta?.total || 0,
-                scheduled: scheduledResponse.data.meta?.total || 0
+                draft: draftResponse.data.meta?.total || 0
             });
         } catch (error) {
             console.error('Error fetching status counts:', error);
@@ -202,16 +206,28 @@ const Dashboard = () => {
                         Manage your blog posts and track your writing journey
                     </p>
                 </div>
-                <Link to="/posts/create">
-                    <Button size="lg" className="shadow-lg">
-                        <div className="flex items-center">
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                            </svg>
-                            Create New Post
-                        </div>
-                    </Button>
-                </Link>
+                <div className="flex gap-3">
+                    <Link to="/categories">
+                        <Button variant="secondary" size="lg" className="shadow-lg">
+                            <div className="flex items-center">
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a1.994 1.994 0 01-1.414.586H7a4 4 0 01-4-4V7a4 4 0 014-4z" />
+                                </svg>
+                                Manage Categories
+                            </div>
+                        </Button>
+                    </Link>
+                    <Link to="/posts/create">
+                        <Button size="lg" className="shadow-lg">
+                            <div className="flex items-center">
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                Create New Post
+                            </div>
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             {/* Status Filter */}

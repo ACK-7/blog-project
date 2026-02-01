@@ -16,10 +16,21 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        // Use withCount for performance instead of loading all posts
-        $categories = Category::withCount('posts')->get();
-        
-        return CategoryResource::collection($categories);
+        try {
+            // Use withCount for performance, but only count published posts
+            $categories = Category::withCount(['posts' => function ($query) {
+                $query->whereNotNull('published_at')
+                      ->where('published_at', '<=', now());
+            }])->get();
+            
+            return CategoryResource::collection($categories);
+        } catch (\Exception $e) {
+            \Log::error('Category index error: ' . $e->getMessage());
+            
+            // Fallback: return categories without post count if there's an issue
+            $categories = Category::all();
+            return CategoryResource::collection($categories);
+        }
     }
 
     /**

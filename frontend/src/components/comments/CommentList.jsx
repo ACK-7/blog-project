@@ -128,8 +128,6 @@ const CommentList = ({ postSlug, postStatus = 'published' }) => {
                         <p className="text-slate-500">
                             {postStatus === 'draft' 
                                 ? 'Comments will be available once this post is published.'
-                                : postStatus === 'scheduled'
-                                ? 'Comments will be available when this post is published.'
                                 : 'Comments are not available for this post.'
                             }
                         </p>

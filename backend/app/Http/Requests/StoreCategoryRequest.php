@@ -18,7 +18,8 @@ class StoreCategoryRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                'unique:categories,name'
+                'unique:categories,name',
+                'regex:/^[a-zA-Z\s]+$/' // Only letters and spaces allowed
             ],
             'slug' => [
                 'required',
@@ -40,6 +41,7 @@ class StoreCategoryRequest extends FormRequest
         return [
             'name.required' => 'Category name is required',
             'name.unique' => 'A category with this name already exists',
+            'name.regex' => 'Category name can only contain letters and spaces',
             'slug.required' => 'Category slug is required',
             'slug.unique' => 'A category with this slug already exists',
             'slug.regex' => 'Slug must contain only lowercase letters, numbers, and hyphens',

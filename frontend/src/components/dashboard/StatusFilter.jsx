@@ -5,8 +5,7 @@ const StatusFilter = ({ activeFilter, onFilterChange, counts = {} }) => {
     const filters = [
         { key: 'all', label: 'All Posts', count: counts.all || 0 },
         { key: 'published', label: 'Published', count: counts.published || 0 },
-        { key: 'draft', label: 'Drafts', count: counts.draft || 0 },
-        { key: 'scheduled', label: 'Scheduled', count: counts.scheduled || 0 },
+        { key: 'draft', label: 'Drafts', count: counts.draft || 0 }
     ];
 
     return (

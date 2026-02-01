@@ -17,14 +17,6 @@ const StatusBadge = ({ status, className = "" }) => {
                     textColor: 'text-gray-800',
                     borderColor: 'border-gray-200'
                 };
-            case 'scheduled':
-                return {
-                    label: 'Scheduled',
-                    icon: '⏰',
-                    bgColor: 'bg-blue-100',
-                    textColor: 'text-blue-800',
-                    borderColor: 'border-blue-200'
-                };
             default:
                 return {
                     label: 'Unknown',

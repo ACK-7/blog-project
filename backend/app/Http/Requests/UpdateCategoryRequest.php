@@ -23,7 +23,8 @@ class UpdateCategoryRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('categories', 'name')->ignore($categoryId)
+                Rule::unique('categories', 'name')->ignore($categoryId),
+                'regex:/^[a-zA-Z\s]+$/' // Only letters and spaces allowed
             ],
             'slug' => [
                 'sometimes',
@@ -45,6 +46,7 @@ class UpdateCategoryRequest extends FormRequest
     {
         return [
             'name.unique' => 'A category with this name already exists',
+            'name.regex' => 'Category name can only contain letters and spaces',
             'slug.unique' => 'A category with this slug already exists',
             'slug.regex' => 'Slug must contain only lowercase letters, numbers, and hyphens',
         ];

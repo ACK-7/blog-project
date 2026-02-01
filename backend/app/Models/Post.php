@@ -70,10 +70,6 @@ class Post extends Model
             return 'draft';
         }
         
-        if ($this->published_at->isFuture()) {
-            return 'scheduled';
-        }
-        
         return 'published';
     }
 
@@ -84,7 +80,6 @@ class Post extends Model
     {
         return match($this->status) {
             'draft' => 'Draft',
-            'scheduled' => 'Scheduled',
             'published' => 'Published',
             default => 'Unknown'
         };
@@ -107,14 +102,6 @@ class Post extends Model
     }
 
     /**
-     * Check if post is scheduled.
-     */
-    public function getIsScheduledAttribute()
-    {
-        return $this->status === 'scheduled';
-    }
-
-    /**
      * Scope a query to only include published posts.
      */
     public function scopePublished($query)
@@ -129,14 +116,5 @@ class Post extends Model
     public function scopeDrafts($query)
     {
         return $query->whereNull('published_at');
-    }
-
-    /**
-     * Scope a query to only include scheduled posts.
-     */
-    public function scopeScheduled($query)
-    {
-        return $query->whereNotNull('published_at')
-                     ->where('published_at', '>', now());
     }
 }

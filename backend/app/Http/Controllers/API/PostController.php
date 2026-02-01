@@ -36,9 +36,6 @@ class PostController extends Controller
                 case 'draft':
                     $query->drafts();
                     break;
-                case 'scheduled':
-                    $query->scheduled();
-                    break;
                 case 'published':
                     $query->published();
                     break;
@@ -250,24 +247,6 @@ class PostController extends Controller
         $drafts = $query->paginate($perPage);
 
         return PostResource::collection($drafts);
-    }
-
-    /**
-     * Get user's scheduled posts.
-     * GET /api/posts/scheduled
-     */
-    public function scheduled(Request $request)
-    {
-        $query = Post::scheduled()
-            ->where('user_id', auth()->id())
-            ->with(['user', 'category'])
-            ->orderBy('published_at', 'asc'); // Earliest scheduled first
-
-        // Always paginate with default or requested per_page
-        $perPage = min((int)$request->get('per_page', 9), 100); // Default 9, max 100
-        $scheduled = $query->paginate($perPage);
-
-        return PostResource::collection($scheduled);
     }
 
     /**

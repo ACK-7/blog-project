@@ -31,7 +31,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Posts - Specific routes MUST come before parameterized routes
     Route::get('/posts/trashed', [PostController::class, 'trashed']); // Get trashed posts
     Route::get('/posts/drafts', [PostController::class, 'drafts']); // Get draft posts
-    Route::get('/posts/scheduled', [PostController::class, 'scheduled']); // Get scheduled posts
     Route::post('/posts/{slug}/restore', [PostController::class, 'restore']); // Restore post
     Route::delete('/posts/{slug}/force', [PostController::class, 'forceDestroy']); // Hard delete
     Route::delete('/posts/{post:slug}/image', [PostController::class, 'removeImage']); // Remove featured image
