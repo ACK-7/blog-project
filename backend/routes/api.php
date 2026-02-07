@@ -15,7 +15,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{category:slug}', [CategoryController::class, 'show']);
 Route::get('/posts', [PostController::class, 'index']);
-Route::get('/posts/{post:slug}/comments', [CommentController::class, 'index']); // Public: view comments
+Route::get('/posts/{post:slug}/comments', [CommentController::class, 'index']); 
 
 // Auth routes (require authentication but not email verification)
 Route::middleware('auth:sanctum')->group(function () {
